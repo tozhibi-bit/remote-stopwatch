@@ -4,47 +4,55 @@
 <meta charset="utf-8">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>リモート・ストップウォッチ</title>
+<title>リモート・ストップウォッチ＆タイマー</title>
 <style>
-  :root{--bg:#0b0d10;--panel:#15181d;--line:#262b33;--fg:#f2f4f7;--mute:#8a93a3;--go:#22c55e;--stop:#ef4444;--lap:#3b82f6;}
+  :root{--bg:#0b0d10;--panel:#15181d;--line:#262b33;--fg:#f2f4f7;--mute:#8a93a3;--go:#22c55e;--stop:#ef4444;--lap:#3b82f6;--warn:#f59e0b}
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP",sans-serif}
-  body{display:flex;flex-direction:column;padding:calc(env(safe-area-inset-top) + 10px) calc(env(safe-area-inset-right) + 14px) calc(env(safe-area-inset-bottom) + 14px) calc(env(safe-area-inset-left) + 14px);min-height:100dvh}
+  body{display:flex;flex-direction:column;padding:calc(env(safe-area-inset-top) + 10px) calc(env(safe-area-inset-right) + 14px) calc(env(safe-area-inset-bottom) + 14px) calc(env(safe-area-inset-left) + 14px);min-height:100dvh;transition:background .2s}
+  body.alarm{animation:flash 1s steps(2) infinite}
+  @keyframes flash{50%{background:#5b0f0f}}
   header{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-  .tabs{display:flex;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:3px}
-  .tabs button{background:none;border:0;color:var(--mute);font-size:14px;padding:7px 12px;border-radius:7px;cursor:pointer}
-  .tabs button.on{background:#2a303a;color:var(--fg)}
+  .seg{display:flex;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:3px}
+  .seg button{background:none;border:0;color:var(--mute);font-size:14px;padding:7px 11px;border-radius:7px;cursor:pointer}
+  .seg button.on{background:#2a303a;color:var(--fg)}
+  .seg.big{margin:10px auto 0;}
+  .seg.big button{font-size:16px;padding:9px 18px;font-weight:600}
   .room{display:flex;align-items:center;gap:6px;margin-left:auto;font-size:13px;color:var(--mute)}
   .room input{width:92px;background:var(--panel);border:1px solid var(--line);color:var(--fg);border-radius:8px;padding:7px 8px;font-size:14px;text-transform:uppercase}
   .dot{width:9px;height:9px;border-radius:50%;background:#555;display:inline-block}
   .dot.ok{background:var(--go)} .dot.solo{background:#eab308}
-  main{flex:1;display:flex;flex-direction:column;justify-content:center;gap:22px;padding:16px 0}
+  main{flex:1;display:flex;flex-direction:column;justify-content:center;gap:20px;padding:14px 0}
   #time{font-variant-numeric:tabular-nums;font-weight:700;text-align:center;line-height:1;letter-spacing:-0.02em;font-size:clamp(56px,17vw,260px);user-select:none}
   #time .ms{color:var(--mute);font-size:.55em}
+  #time.over{color:var(--stop)}
+  #time.soon{color:var(--warn)}
   #status{text-align:center;color:var(--mute);font-size:14px;min-height:1.2em}
   .controls{display:grid;grid-template-columns:1fr 1fr;gap:12px;max-width:640px;width:100%;margin:0 auto}
   .controls button{border:0;border-radius:18px;font-size:22px;font-weight:700;padding:26px 0;color:#fff;cursor:pointer;touch-action:manipulation}
-  .controls button:active{transform:scale(.97)}
+  .controls button:active,.presets button:active{transform:scale(.97)}
   #toggle{background:var(--go)} #toggle.running{background:var(--stop)}
-  #lapreset{background:#374151}
-  #lapreset.lap{background:var(--lap)}
-  body.remote .controls button{padding:min(16vh,120px) 0;font-size:30px}
+  #second{background:#374151} #second.lap{background:var(--lap)}
+  .presets{display:none;grid-template-columns:repeat(4,1fr);gap:8px;max-width:640px;width:100%;margin:0 auto}
+  body.tm .presets{display:grid}
+  .presets button{background:var(--panel);border:1px solid var(--line);color:var(--fg);border-radius:12px;padding:13px 0;font-size:16px;font-weight:600;cursor:pointer;touch-action:manipulation}
+  .presets button:disabled{opacity:.35}
+  body.remote .controls button{padding:min(13vh,110px) 0;font-size:30px}
   body.remote .controls{max-width:none}
   body.remote #time{font-size:clamp(40px,12vw,120px)}
-  body.display .controls{display:none}
-  body.display #laps{max-width:900px}
-  #laps{list-style:none;margin:0 auto;padding:0;max-width:640px;width:100%;max-height:30vh;overflow:auto;font-variant-numeric:tabular-nums}
+  body.display .controls, body.display .presets{display:none}
+  #laps{list-style:none;margin:0 auto;padding:0;max-width:640px;width:100%;max-height:28vh;overflow:auto;font-variant-numeric:tabular-nums}
   #laps li{display:flex;justify-content:space-between;padding:9px 4px;border-bottom:1px solid var(--line);font-size:17px}
   #laps li span:first-child{color:var(--mute)}
-  body.remote #laps{display:none}
-  footer{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;font-size:13px;color:var(--mute)}
+  body.remote #laps, body.tm #laps{display:none}
+  footer{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
   footer button{background:var(--panel);border:1px solid var(--line);color:var(--fg);border-radius:8px;padding:7px 12px;font-size:13px;cursor:pointer}
-  .help{max-width:640px;margin:0 auto;font-size:13px;color:var(--mute);line-height:1.6;text-align:center}
+  .help{max-width:640px;margin:8px auto 0;font-size:12px;color:var(--mute);line-height:1.6;text-align:center}
 </style>
 </head>
-<body>
+<body class="both sw">
 <header>
-  <div class="tabs" role="tablist">
+  <div class="seg" id="modes">
     <button data-mode="both">両方</button>
     <button data-mode="display">表示</button>
     <button data-mode="remote">リモコン</button>
@@ -53,12 +61,22 @@
     <input id="code" maxlength="12" aria-label="ルームコード" placeholder="ROOM">
   </label>
 </header>
+<div class="seg big" id="views">
+  <button data-view="sw">ストップウォッチ</button>
+  <button data-view="tm">タイマー</button>
+</div>
 
 <main>
   <div id="time">00:00<span class="ms">.00</span></div>
   <div id="status"></div>
+  <div class="presets">
+    <button data-add="60000">+1分</button>
+    <button data-add="300000">+5分</button>
+    <button data-add="10000">+10秒</button>
+    <button data-add="clear">クリア</button>
+  </div>
   <div class="controls">
-    <button id="lapreset">リセット</button>
+    <button id="second">リセット</button>
     <button id="toggle">スタート</button>
   </div>
   <ul id="laps"></ul>
@@ -69,157 +87,201 @@
   <button id="fs">全画面</button>
   <button id="wake">画面を消さない</button>
 </footer>
-<p class="help">URL（またはルームコード）が同じ端末同士で同期します。表示用の端末は「表示」、手元の端末は「リモコン」に。</p>
+<p class="help">URL（ルームコード）が同じ端末同士で同期します。表示用は「表示」、手元は「リモコン」に。タイマー終了音を鳴らすには、表示側の画面を一度タップしてください。</p>
 
 <script>
 (() => {
   const $ = id => document.getElementById(id);
-  const ls = {
-    get(k){ try { return localStorage.getItem(k); } catch { return null; } },
-    set(k,v){ try { localStorage.setItem(k,v); } catch {} }
-  };
-
-  // ---- state (skew-free: shared as elapsed ms, not wall-clock timestamps)
-  let state = { running:false, base:0, startAt:0, laps:[], v:0 };
+  const ls = { get(k){ try{return localStorage.getItem(k);}catch{return null;} }, set(k,v){ try{localStorage.setItem(k,v);}catch{} } };
   const now = () => performance.now();
-  const elapsed = () => state.running ? state.base + (now() - state.startAt) : state.base;
 
-  function toWire(){ return { running:state.running, elapsed:elapsed(), laps:state.laps, v:state.v }; }
-  function fromWire(w){
-    state = { running:!!w.running, base:Number(w.elapsed)||0, startAt:now(), laps:Array.isArray(w.laps)?w.laps.slice(0,500).map(Number):[], v:Number(w.v)||0 };
+  // ---- state. Shared as durations (not wall-clock times) so device clock differences don't matter.
+  let S = { view:"sw", v:0,
+    sw:{ running:false, base:0, startAt:0, laps:[] },
+    tm:{ running:false, duration:180000, used:0, startAt:0 } };
+  const swElapsed = () => S.sw.running ? S.sw.base + (now()-S.sw.startAt) : S.sw.base;
+  const tmUsed = () => S.tm.running ? S.tm.used + (now()-S.tm.startAt) : S.tm.used;
+  const tmRemain = () => S.tm.duration - tmUsed();
+
+  function toWire(){ return { view:S.view, v:S.v,
+    sw:{ running:S.sw.running, elapsed:swElapsed(), laps:S.sw.laps },
+    tm:{ running:S.tm.running, duration:S.tm.duration, used:tmUsed() } }; }
+  function fromWire(w, lag=0){
+    const t=now(), n=x=>Number(x)||0;
+    S = { view: w.view==="tm"?"tm":"sw", v:n(w.v),
+      sw:{ running:!!w.sw?.running, base:n(w.sw?.elapsed)+(w.sw?.running?lag:0), startAt:t,
+           laps:Array.isArray(w.sw?.laps)?w.sw.laps.slice(0,500).map(Number):[] },
+      tm:{ running:!!w.tm?.running, duration:Math.max(0,n(w.tm?.duration)), used:n(w.tm?.used)+(w.tm?.running?lag:0), startAt:t } };
+    alarmed = tmRemain() <= 0;
     saveLocal(); render();
   }
-  function saveLocal(){ ls.set("rsw-state", JSON.stringify({ ...toWire(), savedAt: Date.now() })); }
-  (function loadLocal(){
-    try{
-      const s = JSON.parse(ls.get("rsw-state")||"null"); if(!s) return;
-      const extra = s.running ? Math.max(0, Date.now() - s.savedAt) : 0;
-      fromWire({ ...s, elapsed: s.elapsed + extra });
-    }catch{}
-  })();
+  function saveLocal(){ ls.set("rsw2-state", JSON.stringify({ ...toWire(), savedAt:Date.now() })); }
+  try{ const s=JSON.parse(ls.get("rsw2-state")||"null"); if(s) fromWire(s, Math.max(0, Date.now()-s.savedAt)); }catch{}
 
-  // ---- formatting
-  function fmt(ms){
-    ms = Math.max(0, ms);
-    const cs = Math.floor(ms/10)%100, s = Math.floor(ms/1000)%60, m = Math.floor(ms/60000)%60, h = Math.floor(ms/3600000);
-    const p = n => String(n).padStart(2,"0");
-    return { main: (h? h+":"+p(m) : p(m)) + ":" + p(s), ms: "." + p(cs) };
+  // ---- format
+  const p2 = n => String(n).padStart(2,"0");
+  function fmt(ms, withCs=true){
+    const neg = ms < 0; ms = Math.abs(ms);
+    if(!withCs) ms = Math.ceil(ms/1000)*1000;
+    const cs=Math.floor(ms/10)%100, s=Math.floor(ms/1000)%60, m=Math.floor(ms/60000)%60, h=Math.floor(ms/3600000);
+    return { main:(neg?"-":"")+(h? h+":"+p2(m) : p2(m))+":"+p2(s), ms: withCs ? "."+p2(cs) : "" };
   }
 
   // ---- render
   function render(){
-    $("toggle").textContent = state.running ? "ストップ" : (state.base>0 ? "再開" : "スタート");
-    $("toggle").classList.toggle("running", state.running);
-    const lr = $("lapreset");
-    lr.textContent = state.running ? "ラップ" : "リセット";
-    lr.classList.toggle("lap", state.running);
-    lr.disabled = !state.running && state.base===0 && state.laps.length===0;
-    lr.style.opacity = lr.disabled ? .4 : 1;
-    const ul = $("laps"); ul.innerHTML = "";
-    let prev = 0;
-    state.laps.forEach((t,i)=>{ const li=document.createElement("li");
-      const d=fmt(t-prev), tot=fmt(t); prev=t;
-      li.innerHTML = `<span>ラップ ${i+1}</span><span>${d.main+d.ms}</span><span>${tot.main+tot.ms}</span>`;
-      ul.prepend(li); });
+    document.body.classList.toggle("sw", S.view==="sw");
+    document.body.classList.toggle("tm", S.view==="tm");
+    document.querySelectorAll("#views button").forEach(b=>b.classList.toggle("on", b.dataset.view===S.view));
+    const tg=$("toggle"), sc=$("second");
+    if(S.view==="sw"){
+      tg.textContent = S.sw.running ? "ストップ" : (S.sw.base>0 ? "再開" : "スタート");
+      tg.classList.toggle("running", S.sw.running);
+      sc.textContent = S.sw.running ? "ラップ" : "リセット";
+      sc.classList.toggle("lap", S.sw.running);
+      sc.disabled = !S.sw.running && S.sw.base===0 && !S.sw.laps.length;
+    } else {
+      tg.textContent = S.tm.running ? "一時停止" : (S.tm.used>0 ? "再開" : "スタート");
+      tg.classList.toggle("running", S.tm.running);
+      sc.textContent = "リセット"; sc.classList.remove("lap");
+      sc.disabled = !S.tm.running && S.tm.used===0;
+      tg.disabled = !S.tm.running && S.tm.duration<=0;
+      tg.style.opacity = tg.disabled ? .4 : 1;
+    }
+    if(S.view==="sw"){ tg.disabled=false; tg.style.opacity=1; }
+    sc.style.opacity = sc.disabled ? .4 : 1;
+    document.querySelectorAll(".presets button").forEach(b=>b.disabled = S.tm.running || S.tm.used>0);
+    const ul=$("laps"); ul.innerHTML=""; let prev=0;
+    S.sw.laps.forEach((t,i)=>{ const li=document.createElement("li"), d=fmt(t-prev), tot=fmt(t); prev=t;
+      li.innerHTML=`<span>ラップ ${i+1}</span><span>${d.main+d.ms}</span><span>${tot.main+tot.ms}</span>`; ul.prepend(li); });
   }
+
+  let alarmed=false;
   function tick(){
-    const f = fmt(elapsed());
-    $("time").innerHTML = f.main + '<span class="ms">' + f.ms + '</span>';
+    const el=$("time");
+    if(S.view==="sw"){
+      const f=fmt(swElapsed()); el.innerHTML=f.main+'<span class="ms">'+f.ms+'</span>'; el.className="";
+      document.body.classList.remove("alarm");
+    } else {
+      const r=tmRemain();
+      const f = r>=0 ? fmt(r,false) : fmt(r,false);
+      el.textContent = f.main;
+      el.className = r<=0 && S.tm.duration>0 ? "over" : (r<=10000 && S.tm.running ? "soon" : "");
+      document.body.classList.toggle("alarm", r<=0 && S.tm.running && r>-15000);
+    }
+    // alarm on crossing zero (each device rings for itself)
+    const r=tmRemain();
+    if(S.tm.running && r<=0 && !alarmed){ alarmed=true; ring(); }
+    if(r>0) alarmed=false;
     requestAnimationFrame(tick);
   }
 
-  // ---- actions
-  function commit(){ state.v = Date.now() + Math.random(); saveLocal(); render(); broadcast(); }
-  $("toggle").addEventListener("click", ()=>{
-    if(state.running){ state.base = elapsed(); state.running=false; }
-    else { state.startAt = now(); state.running=true; }
-    commit(); buzz();
-  });
-  $("lapreset").addEventListener("click", ()=>{
-    if(state.running){ state.laps.push(Math.round(elapsed())); }
-    else { state.base=0; state.laps=[]; }
-    commit(); buzz();
-  });
-  function buzz(){ try{ navigator.vibrate && navigator.vibrate(15); }catch{} }
+  // ---- sound (unlocked by any tap on this device)
+  let actx=null;
+  document.addEventListener("pointerdown", ()=>{ try{ actx = actx || new (window.AudioContext||window.webkitAudioContext)(); actx.resume(); }catch{} }, {capture:true});
+  function ring(){
+    try{ navigator.vibrate && navigator.vibrate([400,150,400,150,400]); }catch{}
+    if(!actx) return;
+    try{ const t0=actx.currentTime;
+      for(let i=0;i<6;i++){ const o=actx.createOscillator(), g=actx.createGain(); o.frequency.value=880; o.connect(g); g.connect(actx.destination);
+        const t=t0+i*0.35; g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(0.5,t+0.02); g.gain.exponentialRampToValueAtTime(0.0001,t+0.25); o.start(t); o.stop(t+0.3); }
+    }catch{}
+  }
 
-  // ---- modes (#display / #remote / default both)
+  // ---- actions
+  function commit(){ S.v = Date.now()+Math.random(); saveLocal(); render(); broadcast(); }
+  const buzz = () => { try{ navigator.vibrate && navigator.vibrate(15); }catch{} };
+  $("toggle").addEventListener("click", ()=>{
+    if(S.view==="sw"){
+      if(S.sw.running){ S.sw.base=swElapsed(); S.sw.running=false; } else { S.sw.startAt=now(); S.sw.running=true; }
+    } else {
+      if(S.tm.running){ S.tm.used=tmUsed(); S.tm.running=false; }
+      else if(S.tm.duration>0){ if(tmRemain()<=0) S.tm.used=0; S.tm.startAt=now(); S.tm.running=true; alarmed=false; }
+    }
+    commit(); buzz();
+  });
+  $("second").addEventListener("click", ()=>{
+    if(S.view==="sw"){
+      if(S.sw.running) S.sw.laps.push(Math.round(swElapsed())); else { S.sw.base=0; S.sw.laps=[]; }
+    } else { S.tm.running=false; S.tm.used=0; alarmed=false; }
+    commit(); buzz();
+  });
+  document.querySelectorAll(".presets button").forEach(b=>b.addEventListener("click", ()=>{
+    const a=b.dataset.add;
+    S.tm.duration = a==="clear" ? 0 : Math.min(S.tm.duration + Number(a), 24*3600000);
+    commit(); buzz();
+  }));
+  document.querySelectorAll("#views button").forEach(b=>b.addEventListener("click", ()=>{
+    if(S.view===b.dataset.view) return; S.view=b.dataset.view; commit();
+  }));
+
+  // ---- device mode (#CODE-display / #CODE-remote)
   function setMode(m){
     if(!["both","display","remote"].includes(m)) m="both";
-    document.body.className = m;
-    document.querySelectorAll(".tabs button").forEach(b=>b.classList.toggle("on", b.dataset.mode===m));
+    ["both","display","remote"].forEach(x=>document.body.classList.toggle(x, x===m));
+    document.querySelectorAll("#modes button").forEach(b=>b.classList.toggle("on", b.dataset.mode===m));
+    try{ history.replaceState(null,"","#"+($("code").value||"")+(m==="both"?"":"-"+m)); }catch{}
   }
-  document.querySelectorAll(".tabs button").forEach(b=>b.addEventListener("click",()=>{
-    const m=b.dataset.mode; setMode(m);
-    try{ history.replaceState(null,"", "#" + ($("code").value||"") + (m==="both"?"":"-"+m)); }catch{}
-  }));
-  setMode(location.hash.split("-")[1] || "both");
+  const curMode = () => ["display","remote"].find(m=>document.body.classList.contains(m)) || "both";
+  document.querySelectorAll("#modes button").forEach(b=>b.addEventListener("click",()=>setMode(b.dataset.mode)));
 
   // ---- fullscreen / wake lock
   $("fs").addEventListener("click", async ()=>{
     try{ document.fullscreenElement ? await document.exitFullscreen() : await document.documentElement.requestFullscreen(); }
-    catch{ $("status").textContent = "この画面では全画面にできません"; }
+    catch{ $("status").textContent="この画面では全画面にできません（iPhoneは共有→ホーム画面に追加がおすすめ）"; }
   });
   let lock=null;
   $("wake").addEventListener("click", async ()=>{
     try{
       if(lock){ await lock.release(); lock=null; $("wake").textContent="画面を消さない"; return; }
-      lock = await navigator.wakeLock.request("screen");
-      $("wake").textContent="画面ロック防止中 ✓";
+      lock=await navigator.wakeLock.request("screen"); $("wake").textContent="画面ロック防止中 ✓";
       lock.addEventListener("release",()=>{ lock=null; $("wake").textContent="画面を消さない"; });
-    }catch{ $("status").textContent = "画面ロック防止は使えません（端末の自動ロック設定で調整を）"; }
+    }catch{ $("status").textContent="画面ロック防止は使えません（端末の自動ロック設定で調整を）"; }
   });
 
-  // ---- sync via ntfy.sh (public pub/sub, no login). Room code = URL hash.
-  const myId = Math.random().toString(36).slice(2,10);
-  const rand = () => Array.from(crypto.getRandomValues(new Uint8Array(6)),b=>"ABCDEFGHJKLMNPQRSTUVWXYZ23456789"[b%32]).join("");
-  let code = (location.hash.slice(1).split("-")[0] || ls.get("rsw-code") || rand()).toUpperCase().replace(/[^A-Z0-9]/g,"") || rand();
-  $("code").value = code;
-  let es=null, lastSent=0;
-  const topic = () => "rsw-hibiki-" + code;
-  function setConn(kind, text){ $("dot").className = "dot " + kind; $("peers").textContent = text; }
+  // ---- sync via ntfy.sh (public pub/sub, no login). Room code lives in the URL hash.
+  const myId=Math.random().toString(36).slice(2,10);
+  const rand=()=>Array.from(crypto.getRandomValues(new Uint8Array(6)),b=>"ABCDEFGHJKLMNPQRSTUVWXYZ23456789"[b%32]).join("");
+  const [hCode,hMode]=location.hash.slice(1).split("-");
+  let code=((hCode||ls.get("rsw-code")||rand()).toUpperCase().replace(/[^A-Z0-9]/g,""))||rand();
+  $("code").value=code;
+  setMode(hMode||"both");
+  let es=null;
+  const topic=()=>"rsw-hibiki-"+code;
+  const setConn=(k,t)=>{ $("dot").className="dot "+k; $("peers").textContent=t; };
   function apply(msg){
-    try{
-      const s = JSON.parse(msg);
-      if(!s || s.from===myId || !(Number(s.v) > state.v)) return;
-      const lag = s.running ? Math.min(5000, Math.max(0, Date.now() - Number(s.sentAt||Date.now()))) : 0;
-      fromWire({ ...s, elapsed: Number(s.elapsed) + lag });
+    try{ const w=JSON.parse(msg);
+      if(!w || w.from===myId || !(Number(w.v)>S.v)) return;
+      const lag=Math.min(5000, Math.max(0, Date.now()-Number(w.sentAt||Date.now())));
+      fromWire(w, lag);
     }catch{}
   }
   async function broadcast(){
-    const body = JSON.stringify({ ...toWire(), sentAt: Date.now(), from: myId });
-    try{
-      const r = await fetch("https://ntfy.sh/" + topic(), { method:"POST", body });
-      if(!r.ok) throw new Error(r.status);
-      setConn("ok","同期中");
-    }catch(e){ setConn("solo","送信失敗（再度押してください）"); }
+    const body=JSON.stringify({ ...toWire(), sentAt:Date.now(), from:myId });
+    try{ const r=await fetch("https://ntfy.sh/"+topic(),{method:"POST",body}); if(!r.ok) throw 0; setConn("ok","同期中"); }
+    catch{ setConn("solo","送信失敗（もう一度押してください）"); }
   }
   async function connect(){
     if(es) es.close();
-    ls.set("rsw-code", code);
-    try{ history.replaceState(null,"","#"+code + (document.body.className!=="both" ? "-"+document.body.className : "")); }catch{}
-    setConn("","接続中…");
-    try{
-      const r = await fetch("https://ntfy.sh/"+topic()+"/json?poll=1&since=latest");
-      const lines = (await r.text()).trim().split("\n").filter(Boolean);
-      const last = lines.length ? JSON.parse(lines[lines.length-1]) : null;
-      if(last && last.message) apply(last.message);
+    ls.set("rsw-code",code); setMode(curMode()); setConn("","接続中…");
+    try{ const r=await fetch("https://ntfy.sh/"+topic()+"/json?poll=1&since=latest");
+      const lines=(await r.text()).trim().split("\n").filter(Boolean);
+      const last=lines.length?JSON.parse(lines[lines.length-1]):null;
+      if(last&&last.message) apply(last.message);
     }catch{}
-    es = new EventSource("https://ntfy.sh/"+topic()+"/sse");
-    es.onopen = () => setConn("ok","同期中");
-    es.onerror = () => setConn("solo","再接続中…");
-    es.onmessage = (ev) => { try{ const d=JSON.parse(ev.data); if(d.event==="message") apply(d.message); }catch{} };
+    es=new EventSource("https://ntfy.sh/"+topic()+"/sse");
+    es.onopen=()=>setConn("ok","同期中");
+    es.onerror=()=>setConn("solo","再接続中…");
+    es.onmessage=ev=>{ try{ const d=JSON.parse(ev.data); if(d.event==="message") apply(d.message); }catch{} };
   }
-  $("code").addEventListener("change", ()=>{
-    code = $("code").value.trim().toUpperCase().replace(/[^A-Z0-9]/g,"") || rand();
-    $("code").value = code; state.v = 0; connect();
+  $("code").addEventListener("change",()=>{
+    code=$("code").value.trim().toUpperCase().replace(/[^A-Z0-9]/g,"")||rand(); $("code").value=code; S.v=0; connect();
   });
   $("share").addEventListener("click", async ()=>{
-    const url = location.origin + location.pathname + "#" + code;
-    try{ if(navigator.share){ await navigator.share({ title:"リモート・ストップウォッチ", url }); return; } }catch{ return; }
-    try{ await navigator.clipboard.writeText(url); $("status").textContent = "URLをコピーしました"; }
-    catch{ $("status").textContent = url; }
+    const url=location.origin+location.pathname+"#"+code;
+    try{ if(navigator.share){ await navigator.share({title:"リモート・ストップウォッチ",url}); return; } }catch{ return; }
+    try{ await navigator.clipboard.writeText(url); $("status").textContent="URLをコピーしました"; }catch{ $("status").textContent=url; }
   });
-  document.addEventListener("visibilitychange", ()=>{ if(!document.hidden) connect(); });
+  document.addEventListener("visibilitychange",()=>{ if(!document.hidden) connect(); });
   connect();
 
   render(); tick();
